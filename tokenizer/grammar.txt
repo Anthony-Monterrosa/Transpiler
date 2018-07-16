@@ -1,0 +1,83 @@
+Letter =:=
+    "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+    "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+
+Digit =:=
+    "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+Special =:=
+    "`" | "~" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "_" | "+" | "-" | "=" |
+
+Space =:=
+    "\u0020" | " \ u0009" | "\u000B" | "\u000C"
+
+End_Of_Line =:=
+    "\u000D" | "\u000D" "\u000A" | "\u2028" | "\u2029" | "\u0000" | "\u001A"
+
+Letters =:=
+    Letter [Letters]
+
+Digits =:=
+    Digit [Digits]
+
+Specials =:=
+    Special [Specials]
+
+Spaces =:=
+    Space [Spaces]
+
+--------------------------------------------------
+
+Character =:=
+    Letter | Digit | Special | Space
+
+Characters =:=
+    Character [Characters]
+
+--------------------------------------------------
+
+Identifier_Start =:=
+    "_"
+
+Identifier =:=
+    [Identifier_Start] (Letter | Digit) [Identifier_Start]
+
+--------------------------------------------------
+
+Basic_Literal =:=
+    Digits | ("'" Characters "'")
+
+Prefix =:=
+    Identifier "_"
+
+Suffix =:=
+    "_" Identifier
+
+Literal =:=
+    [Prefix] Basic_Literal [Suffix]
+
+--------------------------------------------------
+
+Type =:=
+    "void" | "none" | "u8" | "u16" | "u32" | "u64" | "r32" | "r64" 
+
+Qualifier =:=
+    "constant" | "volatile" | "compile" | "delay" | "inline"
+
+OOP =:=
+    "new" | "delete"0 | "override" | "final" | "abstract" | "public" | "protected" | "private"
+
+Control =:=
+    "if" | "else"
+
+Structure =:=
+    "class" | "function" | "enumerate" | "alias" | "mixin" | "define" | "concept" | "effect"
+
+Type_Utility =:=
+    "auto" | "type" | "cast"
+
+Compiler_Command =:=
+    "pragma"
+
+Keyword =:=
+    Type | Qualifier | Control | OOP | Type_Utility | Compiler_Comman | Ligature
