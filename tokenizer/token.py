@@ -1,81 +1,124 @@
 #! /usr/bin/env python3
 
-from sys import getsizeof as sizeof
-from timeit import timeit
+from copy      import copy
+from functools import reduce
+from argparse  import ArgumentParser
+from os        import getcwd as working_directory
+
+def print_array(array, beginning_string = '', delimiter = '', end_string = ''):
+	return f'''{reduce(lambda text, item: f'{text}{item}{delimiter}', array, beginning_string)}{end_string}'''
+
+def contains(string, *characters):
+	return reduce(lambda boolean, character: boolean and character in string, characters, True)
+
+def indices(string, *texts):
+	return [[index for index, text in enumerate(string) if text == condition] for condition in texts]
+
+def delimit(string, left, right):
+	left_indices, right_indices = indices(string, left)[0], indices(string, right)[0]
+	output = []
+
+	if len(left_indices) == 0: return [string]
+
+	shallow_left_indices, shallow_right_indices = [], []
+	left_index, right_index, difference = 0, 0, 1
+	while left_index < len(left_indices) and right_index < len(right_indices):
+		while True:
+			if left_indices[left_index] > right_indices[right_index]:
+				right_index += 1
+			else: break
+
+		next = False
+		while True:
+			try:
+				if left_indices[left_index + difference] < right_indices[right_index]:
+					next = True
+					difference  += 1
+					right_index += 1
+				else: break
+			except: 
+				if next: 
+					next = False
+					right_index -= 1
+					break
+				else: break
+
+		shallow_left_indices.append(left_indices[left_index])
+		shallow_right_indices.append(right_indices[right_index])
+
+		left_index  += difference
+		right_index += 1
+		difference   = 1
+
+	if len(shallow_left_indices) == 0: return [string]
+
+	output.append(string[0:shallow_left_indices[0]])
+	for left_value, right_value, left_index in zip(shallow_left_indices, shallow_right_indices, range(len(shallow_left_indices))):
+		output.append(delimit(string[left_value + 1:right_value], left, right))
+		if left_index != len(shallow_left_indices) - 1:
+			output.append(string[right_value + 1: shallow_left_indices[left_index + 1]])
+	output.append(string[shallow_right_indices[-1] + 1:])
+
+	return [x for x in output if x]
+			
 
 class Token:
-	__slots__ = ['string']
+	__slots__ = ['tag', 'string']
 
-	def __init__(self, string):
+	def __init__(self, tag, string):
+		self.tag    = tag
 		self.string = string
 
-class Tokens:
-	__slots__ = ['tokens']
+class WordMatch:
+	__slots__ = ['parent', 'string']
 
-	def __init__(self, *tokens):
-		self.tokens = tokens
+	def __init__(self, parent, string):
+		self.parent = parent
+		self.string = string
 
-class Block:
-	__slots__ = ['tokens']
+	def __call__(self, type):
+		return \
+		self.parent               if type == 'match'   else \
+		self.parent.parent        if type == 'pattern' else \
+		self.parent.parent.parent if type == 'lexer'   else \
+		None
 
-	def __init__(self, *tokens):
-		self.tokens = tokens
+	def __str__(self):
+		return self.string
 
-	def run(self, *tuple, **map):
-		pass # Compile and run c++ file
-		
-class Concept:
-	__slots__ = ['block', 'effects']
+	def match(self, string):
+		for pattern in self('lexer').patterns:
+			if self.string == pattern.name:
+				return pattern.match(string)
+		return self.string == string
 
-	def __init__(self, block, *effects):
-		self.block = block
-		self.effects = effects
+class LineMatch:
+	__slots__ = ['parent', 'words']
 
-	def make_changes(self):
-		pass # Execute effects
+	def __init__(self, parent, string):
+		self.parent = parent
+		self.words  = string.split()
 
-class Tokenizer:
-	__slots__ = ['keywords', 'concepts']
+	@staticmethod
+	def construct(string):
+		words = [word.strip() for word in string.split('|')]
 
-	def __init__(self, keywords = [], concepts = []):
-		self.keywords = keywords
-		self.concepts = concepts
+def test(string, left, right):
+	if string.find(left):
+		if string.find(right):
+			.0
 
-''' Keyword meanings:
-	class      -> typical meaning.
-	enumerate  -> compile_time alias for data.
-	alias      -> alias for any identifier
-	mixin      -> text-replace function with scoping.
-	preprocess -> text-replace with no scoping.
-'''
+def main():
+	print(print_array([1,4,3,6,3,4], 'start -> ', ' : ', ' <- end'))
+	print(contains('dj230dfv', 'j', '3', 'v'))
+	print(contains('dsafas', ';'))
+	print(delimit('asd(sdf)dfs', '(', ')'), '\n\n\n')
+	print(delimit('abc(de(fg)hi)jksld(me)l', '(', ')'), '\n\n\n')
+	print(delimit('a)bc()fcsdf(banan)second(shelp))sdf', '(', ')'), '\n\n\n')
+	print(delimit(')))bcadd()(()()))(())secondthird()((dkksfd0-)_DSs-f)))()', '(', ')'), '\n\n\n')
+	print(delimit('288sdfmva$^!DAF}DSFK@FOadjkowedfn{*(%^)', 'D', 'f'), '\n\n\n')
+	print(delimit('(((((()', '(', ')'))
+	print(delimit('(((((())', '(', ')'))
 
-structures = (Token(x) for x in ('class', 'enumerate', 'alias', 'mixin', 'preprocess'))
-
-types = (Token(x) for x in ('flag', 'u8', 'u16', 'u32', 'u64', \
-        'void', 's8', 's16', 's32', 's64', \
-        'none',       'r16',        'r64', \
-        'string'))
-
-qualifiers = (Token(x) for x in ('constant', 'volatile', 'compile', 'delay', 'inline'))
-
-control = (Token(x) for x in ('if', 'else', 'for', 'in', 'with', 'when' \
-          'and', 'or', 'not', \
-		  'return', 'throw', 'break', 'continue'))
-
-type_utility = (Token(x) for x in ('auto', 'type', 'cast'))
-
-oop = (Token(x) for x in ('new', 'delete', \
-      'override', 'final', 'abstract', \
-      'public', 'protected', 'private')) 
-
-compiler = (Token(x) for x in ('pragma'))
-
-special = (Token(x) for x in (':', '    ', '\\', \
-         '(', ')', '[', ']', '{', '}', '<', '>', \
-         "'", '"', '#', \
-         '?', '@', \
-         '+', '-', '*', '/', '%', '^^', '|', '&', '^', '~'))
-
-tokens = Tokens(*structures, *qualifiers, *control, *type_utility, *oop, *compiler, *special)
-
-print(sizeof(tokens))
+if __name__ == '__main__':
+	main()
